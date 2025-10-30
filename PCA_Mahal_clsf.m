@@ -2,78 +2,101 @@ clear;
 close all;
 clc;
 
-num_A = 30;
-num_B = 30;
+num_A_train = 21;
+num_B_train = 21;
 
-path_a = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\Apple";
-path_b = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\Banana";
+num_A_test = 9;
+num_B_test = 9;
 
-%load images
-for i = 1:num_A
-    filename = fullfile(path_a, sprintf('A%d.jpg', i));
+
+%image path
+path_a_train = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\Train\Apple";
+path_b_train = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\\Train\Banana";
+
+path_a_test = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\Test\Apple";
+path_b_test = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\\Test\Banana";
+
+
+%load train set
+for i = 1:21
+    filename = fullfile(path_a_train, sprintf('A%d.jpg', i));
     img = imread(filename);
     img = im2double(img);
-    data_A(i,:) = img(:)';
+    data_a_train(i,:) = img(:)';
 end
 
-for i = 1:num_B
-    filename = fullfile(path_b, sprintf('B%d.jpg', i));
+for i = 1:21
+    filename = fullfile(path_b_train, sprintf('B%d.jpg', i));
     img = imread(filename);
     img = im2double(img);
-    data_B(i,:) = img(:)';
+    data_b_train(i,:) = img(:)';
 end
 
-data = [data_A; data_B];
-labels = [ones(num_A,1); 2*ones(num_B,1)];  % 1 = apple，2 = banana
+i = 0;
 
-%apply PCA
-mu_data = mean(data,1);
-data_ct = data - mu_data;
-[coeff, score, latent] = pca(data_ct);
+%load test set
+for i = 22:30
+    filename = fullfile(path_a_test, sprintf('A%d.jpg', i));
+    img = imread(filename);
+    img = im2double(img);
+    data_a_test(i-21,:) = img(:)';
+end
 
-%dimension can be selected
-d = 55;
-data_pca = score(:, 1:d);
+for i = 22:30
+    filename = fullfile(path_b_test, sprintf('B%d.jpg', i));
+    img = imread(filename);
+    img = im2double(img);
+    data_b_test(i-21,:) = img(:)';
+end
 
-%dataset division: train set and test set
-trainIdx = 1:21;
-testIdx  = 22:30;
+data_train = [data_a_train; data_b_train];
+data_test = [data_a_test; data_b_test];
 
-A_train = data_pca(trainIdx, :);
-A_test = data_pca(testIdx, :);
-B_train= data_pca(30 + trainIdx, :);
-B_test = data_pca(30 + testIdx, :);
 
-data_train = [A_train; B_train];
-data_test = [A_test; B_test];
+%labels for trainset and test set
+label_train = [ones(num_A_train, 1); 2*ones(num_B_train, 1)];
+label_test = [ones(num_A_test, 1); 2*ones(num_B_test, 1)]; 
 
-label_train = [ones(21,1); 2*ones(21,1)];
-label_test = [ones(9,1); 2*ones(9,1)];
+%apply PCA for train set
+mu_train = mean(data_train, 1);
+data_train_ctrl = data_train - mu_train;
+[coeff, score, latent] = pca(data_train_ctrl);
 
-%statistical properties of train data
-muA_train = mean(A_train);
-muB_train = mean(B_train);
+%transfer test set
+d = 10; %number of principal component can be selected
+data_pca_train = score(:, 1:d);
+data_pca_test = (data_test - mu_train) * coeff (:, 1:d);
 
-covA_train = cov(A_train);
-covB_train = cov(B_train);
+data_pca_train_a = data_pca_train(1:21, :);
+data_pca_train_b = data_pca_train(22:42, :);
+data_pca_test_a = data_pca_test(1:9, :);
+data_pca_test_b = data_pca_test(10:18, :);
 
-%Classification Using Mahalanobis Distance Classifier
-predLabel = zeros(size(label_test));
+% train data mean and cov calculation
+mu_pca_train_a = mean(data_pca_train_a);
+mu_pca_train_b = mean(data_pca_train_b);
+
+cov_pca_train_a = cov(data_pca_train_a);
+cov_pca_train_b = cov(data_pca_train_b);
+
+label_pred = zeros(size(label_test));
 
 for i = 1:size(data_test, 1)
-    x = data_test(i,:);
-    dA = (x - muA_train) * pinv(covA_train) * (x - muA_train)';
-    dB = (x - muB_train) * pinv(covB_train) * (x - muB_train)';
+    x = data_pca_test(i,:);
+    dA = (x - mu_pca_train_a) * pinv(cov_pca_train_a) * (x - mu_pca_train_a)';
+    dB = (x - mu_pca_train_b) * pinv(cov_pca_train_b) * (x - mu_pca_train_b)';
     if dA < dB
-        predLabel(i) = 1; %classified as apple
+        label_pred(i) = 1; %classified as apple
     else
-        predLabel(i) = 2; %classified as banana
+        label_pred(i) = 2; %classified as banana
     end
 end
 
 %claculate classification accuracy
-accuracy = mean(predLabel == label_test) * 100;
+accuracy = mean(label_pred == label_test) * 100;
 fprintf('Classification Accuracy = %.2f%%\n', accuracy);
+
+
 
 
 
