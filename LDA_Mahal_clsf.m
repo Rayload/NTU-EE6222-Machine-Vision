@@ -11,6 +11,7 @@ labels = [];
 path_a = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\Apple";
 path_b = "D:\Johnson\NTU\Msc\Sem1\EE6222 Machine Vision\Assignment 6222\Assignment 1\Dataset\Banana";
 
+%load image data
 for i = 1:num_A
     filename = fullfile(path_a, sprintf('A%d.jpg', i));
     img = imread(filename);
@@ -28,12 +29,13 @@ end
 data = [data_A; data_B];
 labels = [ones(num_A,1); 2*ones(num_B,1)];  % 1 = apple，2 = banana
 
+%apply LDA
 ldaModel = fitcdiscr(data, labels, 'DiscrimType', 'linear');
 
 % linear direction of class 1 and class 2
 W = ldaModel.Coeffs(1,2).Linear;
 
-% project data onto LDA direction 将数据投影到LDA方向上
+% project data onto LDA direction
 dataLDA = data * W;
 
 % train and test
@@ -75,6 +77,7 @@ end
 
 accuracy = sum(predLabel == testLabel) / length(testLabel) * 100;
 fprintf('Classification accuracy = %.2f%%\n', accuracy);
+
 
 
 
