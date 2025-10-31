@@ -47,7 +47,6 @@ trainLabel = labels(trainIdx);
 testData = dataLDA(testIdx,:);
 testLabel = labels(testIdx);
 
-
 class1 = trainData(trainLabel==1,:);
 class2 = trainData(trainLabel==2,:);
 
@@ -56,7 +55,6 @@ mu2 = mean(class2);
 
 cov1 = cov(class1);
 cov2 = cov(class2);
-
 
 predLabel = zeros(size(testLabel));
 
@@ -74,9 +72,9 @@ for i = 1:length(testLabel)
     end
 end
 
-
 accuracy = sum(predLabel == testLabel) / length(testLabel) * 100;
-fprintf('Classification accuracy = %.2f%%\n', accuracy);
+fprintf('Classification Accuracy = %.2f%%\n', accuracy);
+
 
 
 
